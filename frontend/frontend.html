@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataShield - Panel de Fraude Digital</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; }
+        input, textarea, button { display: block; width: 100%; margin: 10px 0; padding: 8px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .card { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        pre { background: #eee; padding: 10px; overflow-x: auto; }
+        .token { word-break: break-all; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>DataShield - Reportes de Fraude</h1>
+
+    <h2>Registro</h2>
+    <input type="text" id="regName" placeholder="Nombre">
+    <input type="email" id="regEmail" placeholder="Email">
+    <input type="password" id="regPassword" placeholder="Contraseña">
+    <button onclick="register()">Registrarse</button>
+
+    <h2>Inicio de Sesión</h2>
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Contraseña">
+    <button onclick="login()">Iniciar Sesión</button>
+
+    <div id="authResult"></div>
+
+    <div id="reportSection" style="display:none;">
+        <h2>Crear Reporte</h2>
+        <input type="text" id="reportTitle" placeholder="Título">
+        <textarea id="reportDesc" placeholder="Descripción"></textarea>
+        <input type="text" id="reportPhone" placeholder="Teléfono (opcional)">
+        <input type="email" id="reportEmail" placeholder="Email (opcional)">
+        <input type="text" id="reportBank" placeholder="Cuenta bancaria (opcional)">
+        <button onclick="createReport()">Enviar Reporte</button>
+
+        <h2>Buscar Reportes</h2>
+        <input type="text" id="searchPhone" placeholder="Buscar por teléfono">
+        <input type="email" id="searchEmail" placeholder="Buscar por email">
+        <input type="text" id="searchBank" placeholder="Buscar por cuenta bancaria">
+        <button onclick="searchReports()">Buscar</button>
+        <div id="reportsList"></div>
+    </div>
+</div>
+
+<script>
+    let token = null;
+
+    async function request(endpoint, method, body = null, auth = false) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (auth && token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`http://localhost:3000/api${endpoint}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Error');
+        return data;
+    }
+
+    async function register() {
+        const name = document.getElementById('regName').value;
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        try {
+            const data = await request('/auth/register', 'POST', { email, password, name });
+            document.getElementById('authResult').innerHTML = `<div class="success">Usuario registrado: ${data.user.email}</div>`;
+        } catch (err) {
+            document.getElementById('authResult').innerHTML = `<div class="error">${err.message}</div>`;
+        }
+    }
+
+    async function login() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        try {
+            const data = await request('/auth/login', 'POST', { email, password });
+            token = data.token;
+            document.getElementById('authResult').innerHTML = `<div class="success">Sesión iniciada como ${data.user.email}. Token guardado.</div>`;
+            document.getElementById('reportSection').style.display = 'block';
+        } catch (err) {
+            document.getElementById('authResult').innerHTML = `<div class="error">${err.message}</div>`;
+        }
+    }
+
+    async function createReport() {
+        if (!token) { alert('Inicia sesión primero'); return; }
+        const title = document.getElementById('reportTitle').value;
+        const description = document.getElementById('reportDesc').value;
+        const phoneNumber = document.getElementById('reportPhone').value;
+        const email = document.getElementById('reportEmail').value;
+        const bankAccount = document.getElementById('reportBank').value;
+        try {
+            const data = await request('/reports', 'POST', { title, description, phoneNumber, email, bankAccount, evidenceUrls: [] }, true);
+            alert('Reporte creado con ID: ' + data.id);
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    }
+
+    async function searchReports() {
+        if (!token) { alert('Inicia sesión primero'); return; }
+        const phoneNumber = document.getElementById('searchPhone').value;
+        const email = document.getElementById('searchEmail').value;
+        const bankAccount = document.getElementById('searchBank').value;
+        let url = '/reports/search?';
+        if (phoneNumber) url += `phoneNumber=${encodeURIComponent(phoneNumber)}&`;
+        if (email) url += `email=${encodeURIComponent(email)}&`;
+        if (bankAccount) url += `bankAccount=${encodeURIComponent(bankAccount)}&`;
+        try {
+            const data = await request(url, 'GET', null, true);
+            const reportsList = document.getElementById('reportsList');
+            if (data.reports.length === 0) {
+                reportsList.innerHTML = '<p>No se encontraron reportes.</p>';
+            } else {
+                reportsList.innerHTML = data.reports.map(r => `<div class="card"><strong>${r.title}</strong><br>${r.description}<br>Teléfono: ${r.phoneNumber || 'N/A'}<br>Email: ${r.email || 'N/A'}<br>Estado: ${r.status}</div>`).join('');
+            }
+        } catch (err) {
+            document.getElementById('reportsList').innerHTML = `<div class="error">${err.message}</div>`;
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataShield - Panel Anti-Fraude</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; }
+        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card h2 { margin-top: 0; }
+        input, textarea, select { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #0066cc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        button:hover { background: #0052a3; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #b02a37; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #1e7e34; }
+        .report-item { border-left: 4px solid #ffc107; margin: 10px 0; padding: 10px; background: #f9f9f9; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; margin: 5px 0; }
+        .badge-pending { background: #ffc107; color: #000; }
+        .badge-validated { background: #28a745; color: white; }
+        .badge-rejected { background: #dc3545; color: white; }
+        .role-selector { margin: 20px 0; }
+        .flex { display: flex; gap: 20px; flex-wrap: wrap; }
+        .flex > div { flex: 1; }
+        hr { margin: 20px 0; }
+        .admin-panel { background: #e9ecef; padding: 15px; border-radius: 8px; }
+        .token-info { word-break: break-all; font-size: 12px; background: #eee; padding: 8px; border-radius: 4px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🛡️ DataShield - Centro de Reportes de Fraude</h1>
+
+    <div id="authSection" class="card">
+        <h2>🔐 Acceso</h2>
+        <div class="flex">
+            <div>
+                <h3>Registro</h3>
+                <input type="text" id="regName" placeholder="Nombre completo">
+                <input type="email" id="regEmail" placeholder="Email">
+                <input type="password" id="regPassword" placeholder="Contraseña">
+                <button onclick="register()">Registrarse</button>
+            </div>
+            <div>
+                <h3>Iniciar sesión</h3>
+                <input type="email" id="loginEmail" placeholder="Email">
+                <input type="password" id="loginPassword" placeholder="Contraseña">
+                <button onclick="login()">Entrar</button>
+            </div>
+        </div>
+        <div id="authMessage"></div>
+    </div>
+
+    <div id="appSection" style="display:none;">
+        <div class="card">
+            <p>✅ Conectado como: <strong id="userName"></strong> (<span id="userRole"></span>)</p>
+            <button onclick="logout()">Cerrar sesión</button>
+        </div>
+
+        <!-- VISTA CIUDADANO -->
+        <div id="citizenView" class="card">
+            <h2>📝 Crear nuevo reporte de fraude</h2>
+            <input type="text" id="reportTitle" placeholder="Título del fraude">
+            <textarea id="reportDesc" placeholder="Describe lo sucedido"></textarea>
+            <input type="text" id="reportPhone" placeholder="Teléfono del estafador (opcional)">
+            <input type="email" id="reportEmail" placeholder="Email del estafador (opcional)">
+            <input type="text" id="reportBank" placeholder="Cuenta bancaria (opcional)">
+            <button onclick="createReport()">Enviar reporte</button>
+            <div id="createResult"></div>
+        </div>
+
+        <div id="citizenSearch" class="card">
+            <h2>🔍 Buscar fraudes</h2>
+            <input type="text" id="searchPhone" placeholder="Número de teléfono">
+            <input type="email" id="searchEmail" placeholder="Email">
+            <input type="text" id="searchBank" placeholder="Cuenta bancaria">
+            <button onclick="searchReports()">Buscar</button>
+            <div id="searchResults"></div>
+        </div>
+
+        <!-- VISTA ADMIN/MODERADOR -->
+        <div id="adminView" style="display:none;" class="card admin-panel">
+            <h2>👑 Panel de moderación</h2>
+            <h3>Todos los reportes pendientes</h3>
+            <button onclick="loadAllReports()">Cargar reportes</button>
+            <div id="adminReportsList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let token = null;
+    let currentUser = null;
+
+    async function request(endpoint, method, body = null, auth = true) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (auth && token) headers['Authorization'] = `Bearer ${token}`;
+        const res = await fetch(`http://localhost:3000/api${endpoint}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Error en la solicitud');
+        return data;
+    }
+
+    async function register() {
+        const name = document.getElementById('regName').value;
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        try {
+            const data = await request('/auth/register', 'POST', { email, password, name }, false);
+            document.getElementById('authMessage').innerHTML = `<div class="success">✅ Registro exitoso. Ahora inicia sesión.</div>`;
+        } catch (err) {
+            document.getElementById('authMessage').innerHTML = `<div class="error">❌ ${err.message}</div>`;
+        }
+    }
+
+    async function login() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        try {
+            const data = await request('/auth/login', 'POST', { email, password }, false);
+            token = data.token;
+            currentUser = data.user;
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('appSection').style.display = 'block';
+            document.getElementById('userName').innerText = currentUser.name;
+            document.getElementById('userRole').innerText = currentUser.role;
+
+            if (currentUser.role === 'ADMIN' || currentUser.role === 'MODERATOR') {
+                document.getElementById('adminView').style.display = 'block';
+                loadAllReports(); // Cargar automáticamente
+            } else {
+                document.getElementById('adminView').style.display = 'none';
+            }
+        } catch (err) {
+            document.getElementById('authMessage').innerHTML = `<div class="error">❌ ${err.message}</div>`;
+        }
+    }
+
+    function logout() {
+        token = null;
+        currentUser = null;
+        document.getElementById('authSection').style.display = 'flex';
+        document.getElementById('appSection').style.display = 'none';
+        document.getElementById('authMessage').innerHTML = '';
+    }
+
+    async function createReport() {
+        const title = document.getElementById('reportTitle').value;
+        const description = document.getElementById('reportDesc').value;
+        const phoneNumber = document.getElementById('reportPhone').value;
+        const email = document.getElementById('reportEmail').value;
+        const bankAccount = document.getElementById('reportBank').value;
+        try {
+            const data = await request('/reports', 'POST', { title, description, phoneNumber, email, bankAccount, evidenceUrls: [] }, true);
+            document.getElementById('createResult').innerHTML = `<div class="success">✅ Reporte #${data.id} creado (estado: ${data.status})</div>`;
+            // limpiar campos
+            document.getElementById('reportTitle').value = '';
+            document.getElementById('reportDesc').value = '';
+            document.getElementById('reportPhone').value = '';
+            document.getElementById('reportEmail').value = '';
+            document.getElementById('reportBank').value = '';
+        } catch (err) {
+            document.getElementById('createResult').innerHTML = `<div class="error">❌ ${err.message}</div>`;
+        }
+    }
+
+    async function searchReports() {
+        const phoneNumber = document.getElementById('searchPhone').value;
+        const email = document.getElementById('searchEmail').value;
+        const bankAccount = document.getElementById('searchBank').value;
+        let url = '/reports/search?';
+        if (phoneNumber) url += `phoneNumber=${encodeURIComponent(phoneNumber)}&`;
+        if (email) url += `email=${encodeURIComponent(email)}&`;
+        if (bankAccount) url += `bankAccount=${encodeURIComponent(bankAccount)}&`;
+        try {
+            const data = await request(url, 'GET', null, true);
+            const resultsDiv = document.getElementById('searchResults');
+            if (data.reports.length === 0) {
+                resultsDiv.innerHTML = '<p>No se encontraron reportes con esos criterios.</p>';
+                return;
+            }
+            resultsDiv.innerHTML = data.reports.map(r => `
+                <div class="report-item">
+                    <strong>${r.title}</strong><br>
+                    ${r.description}<br>
+                    📞 ${r.phoneNumber || 'N/A'} | ✉️ ${r.email || 'N/A'} | 🏦 ${r.bankAccount || 'N/A'}<br>
+                    <span class="badge badge-${r.status.toLowerCase()}">${r.status}</span>
+                    <small>Reportado: ${new Date(r.createdAt).toLocaleString()}</small>
+                </div>
+            `).join('');
+        } catch (err) {
+            document.getElementById('searchResults').innerHTML = `<div class="error">${err.message}</div>`;
+        }
+    }
+
+    async function loadAllReports() {
+        try {
+            const data = await request('/admin/reports', 'GET', null, true);
+            const container = document.getElementById('adminReportsList');
+            if (!data.reports || data.reports.length === 0) {
+                container.innerHTML = '<p>No hay reportes aún.</p>';
+                return;
+            }
+            container.innerHTML = data.reports.map(r => `
+                <div class="report-item" data-id="${r.id}">
+                    <strong>#${r.id} - ${r.title}</strong> por ${r.user?.name || 'desconocido'}<br>
+                    ${r.description}<br>
+                    📞 ${r.phoneNumber || 'N/A'} | ✉️ ${r.email || 'N/A'} | 🏦 ${r.bankAccount || 'N/A'}<br>
+                    Estado: <span class="badge badge-${r.status.toLowerCase()}">${r.status}</span><br>
+                    ${r.status === 'PENDING' ? `
+                        <button class="btn-success" onclick="validateReport(${r.id}, 'VALIDATED')">✅ Validar</button>
+                        <button class="btn-danger" onclick="validateReport(${r.id}, 'REJECTED')">❌ Rechazar</button>
+                    ` : `Validado por: ${r.validator?.name || 'sistema'}`}
+                    <hr>
+                </div>
+            `).join('');
+        } catch (err) {
+            document.getElementById('adminReportsList').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+        }
+    }
+
+    async function validateReport(reportId, status) {
+        try {
+            await request(`/admin/reports/${reportId}/validate`, 'PUT', { status }, true);
+            loadAllReports(); // recargar lista
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+        }
+    }
+</script>
+</body>
+</html>
