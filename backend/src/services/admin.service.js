@@ -1,54 +1,5 @@
 import prisma from '../utils/prisma.js';
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
-
-dotenv.config();
-console.log('📧 SMTP_HOST:', process.env.SMTP_HOST);
-console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
-// Configurar transporte de correo
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT),
-  secure: false, // true para 465, false para otros puertos
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-/**
- * Envía un email notificando el cambio de estado del reporte
- */
-async function sendStatusNotification(email, reportTitle, status, reportId) {
-  const statusText = status === 'VALIDATED' ? '✅ VALIDADO' : '❌ RECHAZADO';
-  const statusMessage = status === 'VALIDATED'
-    ? 'Hemos verificado tu reporte y lo hemos marcado como **fraude válido**. Gracias por contribuir a la seguridad digital.'
-    : 'Lamentablemente, tras revisar tu reporte, no hemos encontrado suficientes evidencias para validarlo como fraude.';
-
-  const mailOptions = {
-    from: `"DataShield" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: `DataShield - Tu reporte #${reportId} ha sido ${status === 'VALIDATED' ? 'validado' : 'rechazado'}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <h2 style="color: #0066cc;">🛡️ DataShield - Centro de Reportes de Fraude</h2>
-        <p>Hola,</p>
-        <p>El reporte <strong>"${reportTitle}"</strong> (ID #${reportId}) ha sido <strong style="color: ${status === 'VALIDATED' ? 'green' : 'red'};">${statusText}</strong>.</p>
-        <p>${statusMessage}</p>
-        <p>Puedes ver el estado actualizado ingresando a la plataforma y buscando por el teléfono, email o cuenta bancaria que denunciaste.</p>
-        <hr>
-        <small>Este es un mensaje automático. Por favor no responder a este correo.</small>
-      </div>
-    `,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log(`📧 Correo de notificación enviado a ${email} para reporte #${reportId}`);
-  } catch (error) {
-    console.error(`❌ Error al enviar correo a ${email}:`, error.message);
-  }
-}
+import { sendReportStatusEmail } from './email.service.js';
 
 export const updateReportStatus = async (reportId, status, validatorId) => {
   // Obtener el reporte con los datos del usuario que lo creó
@@ -77,7 +28,14 @@ export const updateReportStatus = async (reportId, status, validatorId) => {
 
   // Enviar notificación por correo al usuario creador (si el estado cambió a VALIDATED o REJECTED)
   if (status !== 'PENDING' && report.user?.email) {
-    await sendStatusNotification(report.user.email, report.title, status, report.id);
+    await sendReportStatusEmail(
+      report.user.email,
+      report.user.name || 'Usuario',
+      report.title,
+      report.id,
+      status,
+      updated.validator?.name || 'DataShield'
+    );
   }
 
   return updated;

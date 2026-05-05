@@ -8,7 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 router.post('/', validate(createReportSchema), createReport);
-router.get('/search', validate(searchReportsSchema), searchReports);
+router.get('/search', validate(searchReportsSchema, 'query'), searchReports);
 router.get('/:id', getReport);
 
 export default router;

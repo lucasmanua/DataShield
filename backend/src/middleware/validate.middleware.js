@@ -1,8 +1,10 @@
-export const validate = (schema) => (req, res, next) => {
+export const validate = (schema, source = 'body') => (req, res, next) => {
   try {
-    schema.parse(req.body);
+    const parsedData = schema.parse(req[source] || {});
+    req[source] = parsedData;
     next();
   } catch (error) {
-    return res.status(400).json({ message: 'Validation error', errors: error.errors });
+    error.statusCode = 400;
+    next(error);
   }
 };

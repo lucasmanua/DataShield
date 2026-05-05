@@ -41,6 +41,13 @@ model Report {
   validatedBy        Int?
   validator          User?        @relation("ValidatorReports", fields: [validatedBy], references: [id])
   compromiseIndicators CompromiseIndicator[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([validatedBy])
+  @@index([phoneNumber])
+  @@index([email])
+  @@index([bankAccount])
 }
 
 enum ReportStatus {

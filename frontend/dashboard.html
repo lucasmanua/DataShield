@@ -5,108 +5,386 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DataShield - Panel Anti-Fraude</title>
     <style>
+        :root {
+            --bg: #0b1020;
+            --bg-accent: #18213e;
+            --surface: #101935;
+            --surface-strong: #0f1730;
+            --surface-soft: #182244;
+            --text: #edf2ff;
+            --muted: #9aa7c8;
+            --border: #2a3863;
+            --primary: #6ea8fe;
+            --primary-hover: #8bb8ff;
+            --success: #53d28c;
+            --danger: #ff8ca1;
+            --warning: #ffd57a;
+            --radius: 16px;
+            --radius-sm: 12px;
+            --shadow-lg: 0 24px 48px rgba(5, 10, 24, 0.45);
+            --shadow-sm: 0 8px 20px rgba(7, 12, 28, 0.3);
+        }
+
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: auto; }
-        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .card h2 { margin-top: 0; }
-        input, textarea, select { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ddd; border-radius: 4px; }
-        button { background: #0066cc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
-        button:hover { background: #0052a3; }
-        .btn-danger { background: #dc3545; }
-        .btn-danger:hover { background: #b02a37; }
-        .btn-success { background: #28a745; }
-        .btn-success:hover { background: #1e7e34; }
-        .report-item { border-left: 4px solid #ffc107; margin: 10px 0; padding: 10px; background: #f9f9f9; }
-        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; margin: 5px 0; }
-        .badge-pending { background: #ffc107; color: #000; }
-        .badge-validated { background: #28a745; color: white; }
-        .badge-rejected { background: #dc3545; color: white; }
-        .role-selector { margin: 20px 0; }
-        .flex { display: flex; gap: 20px; flex-wrap: wrap; }
-        .flex > div { flex: 1; }
-        hr { margin: 20px 0; }
-        .admin-panel { background: #e9ecef; padding: 15px; border-radius: 8px; }
-        .token-info { word-break: break-all; font-size: 12px; background: #eee; padding: 8px; border-radius: 4px; }
-        .error { color: red; }
-        .success { color: green; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 28px 14px 42px;
+            background:
+                radial-gradient(circle at 10% 0%, rgba(110, 168, 254, 0.2), transparent 35%),
+                radial-gradient(circle at 90% 5%, rgba(131, 146, 255, 0.25), transparent 40%),
+                linear-gradient(180deg, var(--bg-accent) 0%, var(--bg) 36%, var(--bg) 100%);
+            color: var(--text);
+            font-family: Inter, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 4px 2px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: clamp(1.4rem, 2.2vw, 2rem);
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        .glass {
+            background: linear-gradient(180deg, rgba(20, 33, 68, 0.9), rgba(14, 24, 49, 0.95));
+            border: 1px solid rgba(110, 168, 254, 0.15);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(8px);
+        }
+
+        .card {
+            padding: 20px;
+            margin-bottom: 16px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, var(--surface) 0%, var(--surface-strong) 100%);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-title {
+            margin: 0 0 12px;
+            font-size: 1.15rem;
+            letter-spacing: -0.01em;
+        }
+
+        .auth-grid,
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .field-group label {
+            display: block;
+            margin: 4px 0 6px;
+            color: var(--muted);
+            font-size: 0.86rem;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            margin: 0 0 10px;
+            padding: 12px 13px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: #0b1430;
+            color: var(--text);
+            outline: none;
+            transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #7e8cb0;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: #6ea8fe;
+            box-shadow: 0 0 0 3px rgba(110, 168, 254, 0.25);
+            background: #0c1737;
+        }
+
+        button {
+            margin: 2px 8px 0 0;
+            padding: 11px 16px;
+            border: 0;
+            border-radius: 11px;
+            background: linear-gradient(180deg, #6ea8fe 0%, #4f8df5 100%);
+            color: #06112d;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+            box-shadow: 0 10px 20px rgba(36, 109, 237, 0.35);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .btn-success {
+            background: linear-gradient(180deg, #6ee7ad 0%, #4cd38f 100%);
+            color: #0d2b1f;
+            box-shadow: 0 10px 20px rgba(76, 211, 143, 0.25);
+        }
+
+        .btn-danger {
+            background: linear-gradient(180deg, #ff9fb0 0%, #ff7890 100%);
+            color: #3f1320;
+            box-shadow: 0 10px 20px rgba(255, 120, 144, 0.28);
+        }
+
+        .status-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .status-card p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .report-item {
+            margin-top: 10px;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(180deg, #152146 0%, #111c3b 100%);
+            border: 1px solid #2b3a67;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin: 8px 0;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .badge-pending { background: rgba(255, 213, 122, 0.18); color: var(--warning); }
+        .badge-validated { background: rgba(83, 210, 140, 0.18); color: var(--success); }
+        .badge-rejected { background: rgba(255, 140, 161, 0.18); color: var(--danger); }
+
+        .error, .success {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            font-weight: 500;
+        }
+
+        .error {
+            color: #ffd3dc;
+            background: rgba(255, 120, 144, 0.1);
+            border-color: rgba(255, 120, 144, 0.35);
+        }
+
+        .success {
+            color: #cffce1;
+            background: rgba(76, 211, 143, 0.13);
+            border-color: rgba(76, 211, 143, 0.35);
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #2d3b66;
+            margin: 12px 0 0;
+        }
+
+        @media (max-width: 960px) {
+            .auth-grid,
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🛡️ DataShield - Centro de Reportes de Fraude</h1>
+    <header class="app-header">
+        <div>
+            <h1 class="title">DataShield Control Center</h1>
+            <p class="subtitle">Panel operativo para registro, monitoreo y validacion de reportes de fraude.</p>
+        </div>
+    </header>
 
-    <div id="authSection" class="card">
-        <h2>🔐 Acceso</h2>
-        <div class="flex">
-            <div>
-                <h3>Registro</h3>
-                <input type="text" id="regName" placeholder="Nombre completo">
-                <input type="email" id="regEmail" placeholder="Email">
-                <input type="password" id="regPassword" placeholder="Contraseña">
-                <button onclick="register()">Registrarse</button>
+    <section id="authSection" class="glass card">
+        <h2 class="section-title">Acceso Seguro</h2>
+        <div class="auth-grid">
+            <div class="field-group">
+                <h3>Crear cuenta</h3>
+                <label for="regName">Nombre completo</label>
+                <input type="text" id="regName" placeholder="Ej: Lucas March">
+                <label for="regEmail">Email</label>
+                <input type="email" id="regEmail" placeholder="tu@email.com">
+                <label for="regPassword">Contrasena</label>
+                <input type="password" id="regPassword" placeholder="Minimo 6 caracteres">
+                <button onclick="register()">Crear cuenta</button>
             </div>
-            <div>
-                <h3>Iniciar sesión</h3>
-                <input type="email" id="loginEmail" placeholder="Email">
-                <input type="password" id="loginPassword" placeholder="Contraseña">
-                <button onclick="login()">Entrar</button>
+            <div class="field-group">
+                <h3>Iniciar sesion</h3>
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="tu@email.com">
+                <label for="loginPassword">Contrasena</label>
+                <input type="password" id="loginPassword" placeholder="Tu clave">
+                <button onclick="login()">Entrar al panel</button>
             </div>
         </div>
         <div id="authMessage"></div>
-    </div>
+    </section>
 
-    <div id="appSection" style="display:none;">
-        <div class="card">
-            <p>✅ Conectado como: <strong id="userName"></strong> (<span id="userRole"></span>)</p>
-            <button onclick="logout()">Cerrar sesión</button>
+    <section id="appSection" style="display:none;">
+        <div class="card status-card">
+            <p>Sesion activa como <strong id="userName"></strong> <span id="userRole"></span></p>
+            <button onclick="logout()">Cerrar sesion</button>
         </div>
 
-        <!-- VISTA CIUDADANO -->
-        <div id="citizenView" class="card">
-            <h2>📝 Crear nuevo reporte de fraude</h2>
-            <input type="text" id="reportTitle" placeholder="Título del fraude">
-            <textarea id="reportDesc" placeholder="Describe lo sucedido"></textarea>
-            <input type="text" id="reportPhone" placeholder="Teléfono del estafador (opcional)">
-            <input type="email" id="reportEmail" placeholder="Email del estafador (opcional)">
-            <input type="text" id="reportBank" placeholder="Cuenta bancaria (opcional)">
-            <button onclick="createReport()">Enviar reporte</button>
-            <div id="createResult"></div>
+        <div class="workspace-grid">
+            <div id="citizenView" class="card">
+                <h2 class="section-title">Nuevo reporte</h2>
+                <label for="reportTitle">Titulo</label>
+                <input type="text" id="reportTitle" placeholder="Ej: Suplantacion por WhatsApp">
+                <label for="reportDesc">Descripcion</label>
+                <textarea id="reportDesc" placeholder="Describe con detalle el incidente"></textarea>
+                <label for="reportPhone">Telefono (opcional)</label>
+                <input type="text" id="reportPhone" placeholder="+57 ...">
+                <label for="reportEmail">Email (opcional)</label>
+                <input type="email" id="reportEmail" placeholder="fraude@email.com">
+                <label for="reportBank">Cuenta bancaria (opcional)</label>
+                <input type="text" id="reportBank" placeholder="Numero de cuenta">
+                <button onclick="createReport()">Publicar reporte</button>
+                <div id="createResult"></div>
+            </div>
+
+            <div id="citizenSearch" class="card">
+                <h2 class="section-title">Busqueda inteligente</h2>
+                <label for="searchPhone">Telefono</label>
+                <input type="text" id="searchPhone" placeholder="Buscar por telefono">
+                <label for="searchEmail">Email</label>
+                <input type="email" id="searchEmail" placeholder="Buscar por email">
+                <label for="searchBank">Cuenta bancaria</label>
+                <input type="text" id="searchBank" placeholder="Buscar por cuenta">
+                <button onclick="searchReports()">Buscar coincidencias</button>
+                <div id="searchResults"></div>
+            </div>
         </div>
 
-        <div id="citizenSearch" class="card">
-            <h2>🔍 Buscar fraudes</h2>
-            <input type="text" id="searchPhone" placeholder="Número de teléfono">
-            <input type="email" id="searchEmail" placeholder="Email">
-            <input type="text" id="searchBank" placeholder="Cuenta bancaria">
-            <button onclick="searchReports()">Buscar</button>
-            <div id="searchResults"></div>
-        </div>
-
-        <!-- VISTA ADMIN/MODERADOR -->
-        <div id="adminView" style="display:none;" class="card admin-panel">
-            <h2>👑 Panel de moderación</h2>
-            <h3>Todos los reportes pendientes</h3>
-            <button onclick="loadAllReports()">Cargar reportes</button>
+        <div id="adminView" style="display:none;" class="card">
+            <h2 class="section-title">Moderacion</h2>
+            <p class="subtitle">Revision operativa de reportes y decision de validacion.</p>
+            <button onclick="loadAllReports()">Actualizar reportes</button>
             <div id="adminReportsList"></div>
         </div>
-    </div>
+    </section>
 </div>
 
 <script>
     let token = null;
     let currentUser = null;
+    const API_BASE = window.__API_BASE__
+        || (window.location.protocol === 'file:' ? 'http://localhost:3000/api' : `${window.location.origin}/api`);
+
+    function setMessage(containerId, message, type = 'error') {
+        const container = document.getElementById(containerId);
+        container.className = type;
+        container.textContent = message;
+    }
+
+    function clearMessage(containerId) {
+        const container = document.getElementById(containerId);
+        container.className = '';
+        container.textContent = '';
+    }
+
+    function createReportCard(report) {
+        const card = document.createElement('div');
+        card.className = 'report-item';
+
+        const title = document.createElement('strong');
+        title.textContent = report.title || '';
+        card.appendChild(title);
+        card.appendChild(document.createElement('br'));
+
+        const description = document.createElement('span');
+        description.textContent = report.description || '';
+        card.appendChild(description);
+        card.appendChild(document.createElement('br'));
+
+        const details = document.createElement('span');
+        const phone = report.phoneNumber || 'N/A';
+        const email = report.email || 'N/A';
+        const bank = report.bankAccount || 'N/A';
+        details.textContent = `📞 ${phone} | ✉️ ${email} | 🏦 ${bank}`;
+        card.appendChild(details);
+        card.appendChild(document.createElement('br'));
+
+        const badge = document.createElement('span');
+        const status = (report.status || 'PENDING').toLowerCase();
+        badge.className = `badge badge-${status}`;
+        badge.textContent = report.status || 'PENDING';
+        card.appendChild(badge);
+        card.appendChild(document.createElement('br'));
+
+        const createdAt = document.createElement('small');
+        createdAt.textContent = `Reportado: ${new Date(report.createdAt).toLocaleString()}`;
+        card.appendChild(createdAt);
+
+        return card;
+    }
 
     async function request(endpoint, method, body = null, auth = true) {
         const headers = { 'Content-Type': 'application/json' };
         if (auth && token) headers['Authorization'] = `Bearer ${token}`;
-        const res = await fetch(`http://localhost:3000/api${endpoint}`, {
+        const res = await fetch(`${API_BASE}${endpoint}`, {
             method,
             headers,
             body: body ? JSON.stringify(body) : null
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Error en la solicitud');
+        const responseText = await res.text();
+        let data = {};
+        try {
+            data = responseText ? JSON.parse(responseText) : {};
+        } catch (error) {
+            data = {};
+        }
+
+        if (res.status === 401) {
+            logout();
+            throw new Error('Sesión expirada. Inicia sesión nuevamente.');
+        }
+
+        if (!res.ok) throw new Error(data.message || `Error en la solicitud (${res.status})`);
         return data;
     }
 
@@ -116,9 +394,9 @@
         const password = document.getElementById('regPassword').value;
         try {
             const data = await request('/auth/register', 'POST', { email, password, name }, false);
-            document.getElementById('authMessage').innerHTML = `<div class="success">✅ Registro exitoso. Ahora inicia sesión.</div>`;
+            setMessage('authMessage', '✅ Registro exitoso. Ahora inicia sesión.', 'success');
         } catch (err) {
-            document.getElementById('authMessage').innerHTML = `<div class="error">❌ ${err.message}</div>`;
+            setMessage('authMessage', `❌ ${err.message}`, 'error');
         }
     }
 
@@ -141,16 +419,16 @@
                 document.getElementById('adminView').style.display = 'none';
             }
         } catch (err) {
-            document.getElementById('authMessage').innerHTML = `<div class="error">❌ ${err.message}</div>`;
+            setMessage('authMessage', `❌ ${err.message}`, 'error');
         }
     }
 
     function logout() {
         token = null;
         currentUser = null;
-        document.getElementById('authSection').style.display = 'flex';
+        document.getElementById('authSection').style.display = 'block';
         document.getElementById('appSection').style.display = 'none';
-        document.getElementById('authMessage').innerHTML = '';
+        clearMessage('authMessage');
     }
 
     async function createReport() {
@@ -161,7 +439,7 @@
         const bankAccount = document.getElementById('reportBank').value;
         try {
             const data = await request('/reports', 'POST', { title, description, phoneNumber, email, bankAccount, evidenceUrls: [] }, true);
-            document.getElementById('createResult').innerHTML = `<div class="success">✅ Reporte #${data.id} creado (estado: ${data.status})</div>`;
+            setMessage('createResult', `✅ Reporte #${data.id} creado (estado: ${data.status})`, 'success');
             // limpiar campos
             document.getElementById('reportTitle').value = '';
             document.getElementById('reportDesc').value = '';
@@ -169,7 +447,7 @@
             document.getElementById('reportEmail').value = '';
             document.getElementById('reportBank').value = '';
         } catch (err) {
-            document.getElementById('createResult').innerHTML = `<div class="error">❌ ${err.message}</div>`;
+            setMessage('createResult', `❌ ${err.message}`, 'error');
         }
     }
 
@@ -185,20 +463,17 @@
             const data = await request(url, 'GET', null, true);
             const resultsDiv = document.getElementById('searchResults');
             if (data.reports.length === 0) {
-                resultsDiv.innerHTML = '<p>No se encontraron reportes con esos criterios.</p>';
+                clearMessage('searchResults');
+                resultsDiv.textContent = 'No se encontraron reportes con esos criterios.';
                 return;
             }
-            resultsDiv.innerHTML = data.reports.map(r => `
-                <div class="report-item">
-                    <strong>${r.title}</strong><br>
-                    ${r.description}<br>
-                    📞 ${r.phoneNumber || 'N/A'} | ✉️ ${r.email || 'N/A'} | 🏦 ${r.bankAccount || 'N/A'}<br>
-                    <span class="badge badge-${r.status.toLowerCase()}">${r.status}</span>
-                    <small>Reportado: ${new Date(r.createdAt).toLocaleString()}</small>
-                </div>
-            `).join('');
+            resultsDiv.className = '';
+            resultsDiv.textContent = '';
+            data.reports.forEach((report) => {
+                resultsDiv.appendChild(createReportCard(report));
+            });
         } catch (err) {
-            document.getElementById('searchResults').innerHTML = `<div class="error">${err.message}</div>`;
+            setMessage('searchResults', err.message, 'error');
         }
     }
 
@@ -207,24 +482,70 @@
             const data = await request('/admin/reports', 'GET', null, true);
             const container = document.getElementById('adminReportsList');
             if (!data.reports || data.reports.length === 0) {
-                container.innerHTML = '<p>No hay reportes aún.</p>';
+                container.className = '';
+                container.textContent = 'No hay reportes aún.';
                 return;
             }
-            container.innerHTML = data.reports.map(r => `
-                <div class="report-item" data-id="${r.id}">
-                    <strong>#${r.id} - ${r.title}</strong> por ${r.user?.name || 'desconocido'}<br>
-                    ${r.description}<br>
-                    📞 ${r.phoneNumber || 'N/A'} | ✉️ ${r.email || 'N/A'} | 🏦 ${r.bankAccount || 'N/A'}<br>
-                    Estado: <span class="badge badge-${r.status.toLowerCase()}">${r.status}</span><br>
-                    ${r.status === 'PENDING' ? `
-                        <button class="btn-success" onclick="validateReport(${r.id}, 'VALIDATED')">✅ Validar</button>
-                        <button class="btn-danger" onclick="validateReport(${r.id}, 'REJECTED')">❌ Rechazar</button>
-                    ` : `Validado por: ${r.validator?.name || 'sistema'}`}
-                    <hr>
-                </div>
-            `).join('');
+            container.className = '';
+            container.textContent = '';
+            data.reports.forEach((report) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'report-item';
+                wrapper.dataset.id = report.id;
+
+                const title = document.createElement('strong');
+                title.textContent = `#${report.id} - ${report.title}`;
+                wrapper.appendChild(title);
+
+                const by = document.createElement('span');
+                by.textContent = ` por ${report.user?.name || 'desconocido'}`;
+                wrapper.appendChild(by);
+                wrapper.appendChild(document.createElement('br'));
+
+                const description = document.createElement('span');
+                description.textContent = report.description || '';
+                wrapper.appendChild(description);
+                wrapper.appendChild(document.createElement('br'));
+
+                const details = document.createElement('span');
+                details.textContent = `📞 ${report.phoneNumber || 'N/A'} | ✉️ ${report.email || 'N/A'} | 🏦 ${report.bankAccount || 'N/A'}`;
+                wrapper.appendChild(details);
+                wrapper.appendChild(document.createElement('br'));
+
+                const statusLabel = document.createElement('span');
+                statusLabel.textContent = 'Estado: ';
+                wrapper.appendChild(statusLabel);
+
+                const badge = document.createElement('span');
+                badge.className = `badge badge-${(report.status || 'PENDING').toLowerCase()}`;
+                badge.textContent = report.status || 'PENDING';
+                wrapper.appendChild(badge);
+                wrapper.appendChild(document.createElement('br'));
+
+                if (report.status === 'PENDING') {
+                    const acceptButton = document.createElement('button');
+                    acceptButton.className = 'btn-success';
+                    acceptButton.textContent = '✅ Validar';
+                    acceptButton.onclick = () => validateReport(report.id, 'VALIDATED');
+
+                    const rejectButton = document.createElement('button');
+                    rejectButton.className = 'btn-danger';
+                    rejectButton.textContent = '❌ Rechazar';
+                    rejectButton.onclick = () => validateReport(report.id, 'REJECTED');
+
+                    wrapper.appendChild(acceptButton);
+                    wrapper.appendChild(rejectButton);
+                } else {
+                    const validator = document.createElement('span');
+                    validator.textContent = `Validado por: ${report.validator?.name || 'sistema'}`;
+                    wrapper.appendChild(validator);
+                }
+
+                wrapper.appendChild(document.createElement('hr'));
+                container.appendChild(wrapper);
+            });
         } catch (err) {
-            document.getElementById('adminReportsList').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            setMessage('adminReportsList', `Error: ${err.message}`, 'error');
         }
     }
 

@@ -1,9 +1,17 @@
 import nodemailer from 'nodemailer';
 
+const emailPort = Number(process.env.EMAIL_PORT || 587);
+const hasEmailConfig = Boolean(
+  process.env.EMAIL_HOST &&
+  process.env.EMAIL_USER &&
+  process.env.EMAIL_PASS &&
+  process.env.EMAIL_FROM
+);
+
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT),
-  secure: false, // true para 465, false para otros
+  port: Number.isNaN(emailPort) ? 587 : emailPort,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -11,9 +19,12 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendReportStatusEmail = async (userEmail, userName, reportTitle, reportId, status, validatorName) => {
+  if (!hasEmailConfig) {
+    return;
+  }
+
   const statusText = status === 'VALIDATED' ? 'validado como fraude' : 'rechazado';
-  const statusColor = status === 'VALIDATED' ? 'verde' : 'rojo';
-  
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
       <h2 style="color: #0066cc;">DataShield - Actualización de tu reporte</h2>

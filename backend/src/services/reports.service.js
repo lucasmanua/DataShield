@@ -51,7 +51,10 @@ export const searchReportsForCitizen = async (filters, userId, page = 1, limit =
     where,
     skip,
     take: limit,
-    include: { compromiseIndicators: true, validator: true },
+    include: {
+      compromiseIndicators: true,
+      validator: { select: { id: true, name: true, email: true } }
+    },
     orderBy: { createdAt: 'desc' }
   });
   const total = await prisma.report.count({ where });

@@ -7,7 +7,8 @@ export const validateReport = async (req, res) => {
     const updated = await adminService.updateReportStatus(reportId, status, req.user.id);
     res.json(updated);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    error.statusCode = 400;
+    throw error;
   }
 };
 
@@ -15,11 +16,10 @@ export const getAllReports = async (req, res) => {
   try {
     const { status, phoneNumber, email, page, limit } = req.query;
     const filters = { status, phoneNumber, email };
-    const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 10;
-    const result = await adminService.getAllReportsForAdmin(filters, pageNum, limitNum);
+    const result = await adminService.getAllReportsForAdmin(filters, page, limit);
     res.json(result);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    error.statusCode = 400;
+    throw error;
   }
 };
