@@ -27,7 +27,7 @@ export const updateReportStatus = async (reportId, status, validatorId) => {
   });
 
   // Enviar notificación por correo al usuario creador (si el estado cambió a VALIDATED o REJECTED)
-  if (status !== 'PENDING' && report.user?.email) {
+  if (status !== 'PENDING' && report.user?.email && report.user?.email !== 'anonymous@datashield.app') {
     await sendReportStatusEmail(
       report.user.email,
       report.user.name || 'Usuario',
@@ -42,11 +42,13 @@ export const updateReportStatus = async (reportId, status, validatorId) => {
 };
 
 export const getAllReportsForAdmin = async (filters, page = 1, limit = 10) => {
-  const { status, phoneNumber, email } = filters;
+  const { status, fraudType, phoneNumber, email, region } = filters;
   const where = {};
   if (status) where.status = status;
-  if (phoneNumber) where.phoneNumber = { contains: phoneNumber, mode: 'insensitive' };
-  if (email) where.email = { contains: email, mode: 'insensitive' };
+  if (fraudType) where.fraudType = fraudType;
+  if (phoneNumber) where.phoneNumber = { contains: phoneNumber };
+  if (email) where.email = { contains: email };
+  if (region) where.region = { contains: region };
   const skip = (page - 1) * limit;
   const reports = await prisma.report.findMany({
     where,
@@ -61,4 +63,39 @@ export const getAllReportsForAdmin = async (filters, page = 1, limit = 10) => {
   });
   const total = await prisma.report.count({ where });
   return { reports, total, page, limit, totalPages: Math.ceil(total / limit) };
+};
+
+export const exportReports = async (filters, format = 'csv') => {
+  const { status, fraudType, region } = filters;
+  const where = {};
+  if (status) where.status = status;
+  if (fraudType) where.fraudType = fraudType;
+  if (region) where.region = { contains: region, mode: 'insensitive' };
+
+  const reports = await prisma.report.findMany({
+    where,
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      validator: { select: { id: true, name: true } },
+      compromiseIndicators: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (format === 'csv') {
+    const headers = 'ID,Título,Tipo Fraude,Teléfono,Email,Cuenta,URL,Región,Estado,Fecha,Denunciante,Validador\n';
+    const rows = reports.map(r =>
+      `"${r.id}","${r.title}","${r.fraudType}","${r.phoneNumber || ''}","${r.email || ''}","${r.bankAccount || ''}","${r.url || ''}","${r.region || ''}","${r.status}","${r.createdAt.toISOString()}","${r.anonymous ? 'Anónimo' : (r.user?.name || '')}","${r.validator?.name || ''}"`
+    ).join('\n');
+    return headers + rows;
+  }
+
+  return reports;
+};
+
+export const getAlerts = async () => {
+  return prisma.alert.findMany({
+    where: { active: true },
+    orderBy: { count: 'desc' }
+  });
 };

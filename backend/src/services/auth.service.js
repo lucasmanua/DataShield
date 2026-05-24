@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma.js';
 
 export const registerUser = async (userData) => {
-  const { email, password, name } = userData;
+  const { email, password, name, region } = userData;
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
     throw new Error('Email already registered');
@@ -14,9 +14,10 @@ export const registerUser = async (userData) => {
       email,
       password: hashedPassword,
       name,
+      region,
       role: 'CITIZEN'
     },
-    select: { id: true, email: true, name: true, role: true }
+    select: { id: true, email: true, name: true, role: true, region: true }
   });
   const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
   return { user, token };

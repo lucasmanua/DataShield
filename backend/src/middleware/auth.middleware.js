@@ -10,7 +10,7 @@ export const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      select: { id: true, email: true, role: true, name: true }
+      select: { id: true, email: true, role: true, name: true, region: true, createdAt: true }
     });
     if (!user) {
       return res.status(401).json({ message: 'User not found' });

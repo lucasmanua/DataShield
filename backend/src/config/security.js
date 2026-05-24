@@ -2,7 +2,10 @@ import helmet from 'helmet';
 import cors from 'cors';
 import { env } from './env.js';
 
-export const helmetMiddleware = helmet();
+export const helmetMiddleware = helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+});
 
 export const corsMiddleware = cors({
   origin: (origin, callback) => {

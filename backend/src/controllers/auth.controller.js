@@ -20,3 +20,13 @@ export const login = async (req, res) => {
     throw error;
   }
 };
+
+export const getProfile = async (req, res) => {
+  try {
+    const { id, email, name, role, region, createdAt } = req.user;
+    res.json({ user: { id, email, name, role, region, createdAt } });
+  } catch (error) {
+    error.statusCode = 500;
+    throw error;
+  }
+};

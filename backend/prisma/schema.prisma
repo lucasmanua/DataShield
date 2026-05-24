@@ -3,44 +3,44 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  password     String
-  name         String
-  role         Role     @default(CITIZEN)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  reports      Report[]  @relation("UserReports")
-  validatedReports Report[] @relation("ValidatorReports")
-}
-
-enum Role {
-  ADMIN
-  MODERATOR
-  CITIZEN
+  id               Int       @id @default(autoincrement())
+  email            String    @unique
+  password         String
+  name             String
+  role             String    @default("CITIZEN")
+  region           String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  reports          Report[]  @relation("UserReports")
+  validatedReports Report[]  @relation("ValidatorReports")
 }
 
 model Report {
-  id                 Int          @id @default(autoincrement())
+  id                 Int       @id @default(autoincrement())
   title              String
   description        String
+  fraudType          String    @default("OTHER")
   phoneNumber        String?
   email              String?
   bankAccount        String?
-  evidenceUrls       String[]
-  status             ReportStatus @default(PENDING)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  url                String?
+  socialMediaProfile String?
+  region             String?
+  anonymous          Boolean   @default(false)
+  status             String    @default("PENDING")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
   userId             Int
-  user               User         @relation("UserReports", fields: [userId], references: [id])
+  user               User      @relation("UserReports", fields: [userId], references: [id])
   validatedBy        Int?
-  validator          User?        @relation("ValidatorReports", fields: [validatedBy], references: [id])
+  validator          User?     @relation("ValidatorReports", fields: [validatedBy], references: [id])
   compromiseIndicators CompromiseIndicator[]
+  evidences          Evidence[]
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
@@ -48,18 +48,37 @@ model Report {
   @@index([phoneNumber])
   @@index([email])
   @@index([bankAccount])
+  @@index([url])
+  @@index([fraudType])
+  @@index([region])
 }
 
-enum ReportStatus {
-  PENDING
-  VALIDATED
-  REJECTED
+model Evidence {
+  id       Int    @id @default(autoincrement())
+  url      String
+  reportId Int
+  report   Report @relation(fields: [reportId], references: [id])
 }
 
 model CompromiseIndicator {
   id          Int      @id @default(autoincrement())
-  name        String
+  type        String   @default("phone")
+  value       String
   description String?
   reportId    Int
   report      Report   @relation(fields: [reportId], references: [id])
+
+  @@index([type, value])
+}
+
+model Alert {
+  id        Int      @id @default(autoincrement())
+  indicator String
+  type      String
+  count     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([indicator, type])
 }
