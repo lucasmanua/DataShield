@@ -1,100 +1,119 @@
 # DataShield 🛡️
 
-**Sistema Comunitario de Registro de Fraudes Digitales - Paraguay**
+**Sistema Comunitario de Registro de Fraudes Digitales** — Paraguay
 
-DataShield es una plataforma web que permite a los ciudadanos paraguayos consultar y reportar fraudes digitales de forma comunitaria. Antes de realizar una transferencia, podés verificar si un número de teléfono, correo electrónico o cuenta bancaria ya fue reportado como fraudulento.
+Plataforma para consultar y reportar fraudes digitales. Antes de transferir dinero, verificá si un número de teléfono, email o cuenta bancaria ya fue denunciado como fraudulento.
 
-## Estructura del proyecto
+---
 
+## Inicio rápido (30 segundos)
+
+```bash
+# 1. Clonar
+git clone https://github.com/lucasmanua/DataShield.git
+cd DataShield/backend
+
+# 2. Un solo comando
+npm run setup
+
+# 3. Iniciar servidor
+npm run dev
 ```
-DataShield/
-├── backend/          # API REST (Express + Prisma)
-│   ├── src/          # Código fuente
-│   ├── prisma/       # Esquema y migraciones de BD
-│   └── tests/        # Pruebas unitarias
-├── frontend/
-│   ├── landing/      # Landing page (React + Vite + Tailwind)
-│   └── app/          # Aplicación SPA (React + Vite + Tailwind + React Router)
-└── README.md
-```
+
+Abrir **http://localhost:3000** (landing page) o **http://localhost:3000/frontend/frontend.html** (portal ciudadano).
+
+---
 
 ## Requisitos
 
-- Node.js 18+
-- npm
+Solo **Node.js 18+**. La base de datos es **SQLite local** — no necesita PostgreSQL, MySQL ni ningún servidor externo.
 
-## Inicio rápido
+---
 
-### 1. Backend (único comando necesario)
+## Uso
+
+### Portal ciudadano
+- **Registrarse** con nombre, email y contraseña
+- **Crear reporte** de fraude con datos del estafador (teléfono, email, cuenta bancaria, URL)
+- **Buscar** indicadores para saber si ya fueron reportados
+
+### Panel de moderación
+Usar con rol `ADMIN` o `MODERATOR`:
+- Ver todos los reportes
+- Validar o rechazar reportes pendientes
+- Los cambios de estado notifican al creador por email
+
+> Para asignarte rol admin: registrate normalmente, luego ejecutá en la terminal:
+> ```bash
+> npx prisma db execute "UPDATE User SET role = 'ADMIN' WHERE email = 'tu@email.com';"
+> ```
+
+---
+
+## API
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| POST | `/api/auth/register` | ❌ | Registro |
+| POST | `/api/auth/login` | ❌ | Login |
+| POST | `/api/reports` | ✅ | Crear reporte |
+| GET | `/api/reports/search` | ✅ | Buscar reportes |
+| GET | `/api/reports/:id` | ✅ | Detalle |
+| PUT | `/api/admin/reports/:id/validate` | ✅ Admin | Validar/rechazar |
+| GET | `/api/admin/reports` | ✅ Admin | Todos los reportes |
+| GET | `/api/stats` | ❌ | Estadísticas públicas |
+| GET | `/api/reports/export` | ✅ Admin | Exportar CSV |
+
+---
+
+## Desarrollo frontend (React opcional)
+
+El frontend principal usa React (Vite + Tailwind). Para desarrollar con recarga en caliente:
 
 ```bash
-cd backend
-cp .env.example .env
-npm run setup    # Instala deps + crea BD automáticamente
-npm run dev      # Servidor en http://localhost:3000
-```
-
-El backend ya sirve la app completa (API + frontend). Solo abrir:
-- **App principal:** `http://localhost:3000/app/`
-- **Landing page:** `http://localhost:3000/`
-- **API:** `http://localhost:3000/api/...`
-
-### 2. Modo desarrollo frontend (opcional)
-
-Si quieres modificar el frontend con recarga en caliente:
-
-```bash
-# App SPA (dashboard, admin, consultas)
+# App (dashboard, admin)
 cd frontend/app
-npm install
-npm run dev    # http://localhost:5173
+npm install && npm run dev    # http://localhost:5173
 
 # Landing page
 cd frontend/landing
-npm install
-npm run dev    # http://localhost:5174
+npm install && npm run dev    # http://localhost:5174
 ```
 
-## Base de datos
+Para construir la app React para producción:
+```bash
+cd frontend/app && npm run build
+cd frontend/landing && npm run build
+```
 
-**Opción A - SQLite local (default, recomendado):**
-Cada desarrollador tiene su propia BD. No necesita servidor. Ideal para desarrollo.
+> El backend también sirve dos HTML estáticos sin React: `frontend/frontend.html` y `frontend/dashboard.html`, accesibles en `/frontend/frontend.html` y `/frontend/dashboard.html`.
 
-**Opción B - PostgreSQL compartido (todos ven los mismos datos):**
-1. Crear cuenta gratis en [Neon](https://neon.tech) (500MB, sin tarjeta)
-2. Copiar la URL de conexión
-3. En `backend/.env` cambiar:
-   ```env
-   DATABASE_URL=postgresql://user:pass@ep-xxxx.neon.tech/datashield?sslmode=require
-   ```
-4. Ejecutar `npm run db:setup` para crear las tablas
+---
+
+## Variables de entorno
+
+| Variable | Default | Descripción |
+|----------|---------|-------------|
+| `DATABASE_URL` | `file:./dev.db` | SQLite local o PostgreSQL |
+| `JWT_SECRET` | *(requerido)* | Secreto para JWT |
+| `PORT` | `3000` | Puerto del servidor |
+| `ALLOWED_ORIGINS` | `http://localhost:5173,...` | CORS |
+| `EMAIL_HOST` / `EMAIL_PORT` / `EMAIL_USER` / `EMAIL_PASS` / `EMAIL_FROM` | — | Email notificaciones (opcional) |
+
+---
 
 ## Tecnologías
 
 | Capa | Tecnología |
 |------|-----------|
-| Backend | Node.js, Express 5, Prisma, JWT, Zod |
-| Base de datos | SQLite (desarrollo) / PostgreSQL (producción) |
-| Frontend App | React 18, React Router 6, Vite, Tailwind CSS |
-| Landing | React 18, Vite, Tailwind CSS |
-| Seguridad | Helmet, CORS, bcrypt, rate limiting |
+| Backend | Node.js + Express 5 + Prisma |
+| BD | SQLite (dev) / PostgreSQL (prod) |
+| Frontend | React 18 + Vite + Tailwind + React Router |
+| Auth | JWT + bcrypt |
+| Seguridad | Helmet + CORS + rate limiting |
 
-## Funcionalidades
+---
 
-- ✅ Búsqueda pública de indicadores de fraude (teléfono, email, cuenta bancaria, URL)
-- ✅ Reporte de fraudes con tipos específicos (phishing, marketplace, etc.)
-- ✅ Registro de usuarios con departamento de Paraguay
-- ✅ Panel de ciudadano con historial de reportes
-- ✅ Panel de administración/moderación
-- ✅ Validación de reportes (validar, rechazar, investigar)
-- ✅ Estadísticas públicas por tipo de fraude y departamento
-- ✅ Alertas automáticas cuando un indicador acumula 3+ reportes
-- ✅ Reportes anónimos
-- ✅ Exportación a CSV
-- ✅ Diseño responsive
-- ✅ Notificaciones por email
+## Proyecto académico
 
-## Licencia
-
-Proyecto académico - Análisis y Desarrollo de Sistemas Informáticos
-Asunción, Paraguay - 2025
+Análisis y Desarrollo de Sistemas Informáticos — Asunción, Paraguay — 2025
